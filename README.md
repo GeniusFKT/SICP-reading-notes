@@ -45,7 +45,7 @@
 * 环境所扮演的角色就是用于确定表达式中各个符号的意义
 
 ### 1.1.4 复合过程
-**过程定义**：可以为复合操作提供名字，而后可以将这样的操作作为一个单元使用(过程体也可以是一系列的表达式)  
+**过程定义**：可以为复合操作提供名字，而后可以将这样的操作作为一个单元使用(过程体也可以是一系列的表达式)  
 
 `(define (<name> <formal parameters>) <body>)`  
 `(define (square x) (* x x))`
@@ -67,3 +67,77 @@
 　　　`(<pn> <en>))`
 
 第一个表达式是一个**谓词**，也就是说，它的值被解释成真或者假（在Scheme里用常量`#t`和`#f`表示）
+求值方式如下：首先求值谓词`<p1>`，如果它的值是`false`，那么就继续求值`<p2>`，以此类推，知道发现某个谓词的值为真为止。返回其对应的**序列表达式**`<e>`的值，若无法找到，`cond`的值就没有定义。
+
+* 也可以把`cond`的最后的条件换成`else`
+* 当分析的情况只有两种时，可以采用特殊形式`if`，如：
+
+`(if <predicate> <consequent> <alternative>)`
+
+* 解释器先判断`predicate`的真假，再进行后两者的选择与计算，而不是三者同时进行计算再判断
+* `cond`子句的`<e>`部分可以是一个表达式的序列，而`if`中的`<consequent>`和`<alternative>`只能是单个表达式
+
+### 1.1.7 实例：采用牛顿法求平方根
+
+* 原理：如果对x的平方根有了一个猜测y，只需求出y和x/y的平均值，便可获得一个比y更好的猜测
+* 代码实现：  
+
+`(define (sqrt-iter guess x)`  
+　　`(if (good-enough? guess x)`  
+　　　　`guess`  
+　　　　`(sqrt-iter (improve guess x)`  
+　　　　　　　　　　`x)))`
+
+`(define (improve guess x)`  
+　　`(average guess (/ x guess))`  
+
+`(define (average x y)`  
+　　`(/ (+ x y) 2)`
+
+`(define (good-enough? guess x)`  
+　　`(< (abs(- square(guess) x) 0.001 ))`
+
+* 上式使用误差为0.001的情形
+ 
+`(define (sqrt x)`  
+　　`(sqrt-iter 1.0 x))`
+
+* 分析：该方法对于过大的数以及过小的数均会出现较大的偏差。对于一个较小的数，可能只操作了一次误差便已经在0.001内，精度不够；对于一个较大的数，由于机器的精度无法分辨两个较大数之间的细微差别，即`（improve guess x）`会卡在一个数上不改进（`(improve guess x) = guess`, 即`(/ x guess) = guess`），而判断不出差距小于0.001
+
+### 1.1.8 过程作为黑箱抽象
+
+**局部名**  
+过程用户不必去关注的细节之一，就是在有关的过程里面的参数的名字，这是由实现者选用的。这一原则（过程的意义应该不依赖于其作者为形式参数所选择的名字）影响十分深远，如过程的形式参数名必须局部于有关的过程体。  
+
+形式参数的具体名字是什么其实完全没有关系，这样的名字称为**约束变量**，因此我们说，一个过程的定义**约束** 了它的所有的形式参数。如果一个变量不是被约束的，我们称它为**自由**的。一个名字的定义被约束于的那一集表达式称为这个名字的**作用域**。
+
+**内部定义与块结构**  
+我们要允许一个过程里带有一些**内部定义**，使它们是局部于这一过程的。如在平方根问题中，可以写：  
+
+ 
+`(define (sqrt x)`  
+　　`(define (good-enough? guess x)`  
+　　　　`(< (abs(- square(guess) x) 0.001 ))`  
+　　`(define (improve guess x)`  
+　　　　`(average guess (/ x guess))`  
+　　`(define (sqrt-iter guess x)`  
+　　　　`(if (good-enough? guess x)`  
+　　　　　　`guess`  
+　　　　　　`(sqrt-iter (improve guess x)`  
+　　　　　　　　　　　　`x)))`  
+　　`(sqrt-iter 1.0 x))`
+
+这样嵌套的定义称为**块结构**，它是最简单的名字包装问题的一种正确解决方式，实际上，还有一种很好的想法，让x作为内部定义中的自由变量，这样**在外围的sqrt被调用时，x由实际参数得到自己的值**。这种方式称为**词法作用域**。
+
+`(define (sqrt x)`  
+　　`(define (good-enough? guess)`  
+　　　　`(< (abs(- square(guess) x) 0.001 ))`  
+　　`(define (improve guess)`  
+　　　　`(average guess (/ x guess))`  
+　　`(define (sqrt-iter guess)`  
+　　　　`(if (good-enough? guess)`  
+　　　　　　`guess`  
+　　　　　　`(sqrt-iter (improve guess))))`  
+　　`(sqrt-iter 1.0))`
+
+* 词法作用域要求过程中的自由变量实际引用外围过程定义中所出现的约束，也就是说，应该在定义本过程的环境去寻找它们。
