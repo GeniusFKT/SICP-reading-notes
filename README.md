@@ -141,3 +141,120 @@
 　　`(sqrt-iter 1.0))`
 
 * 词法作用域要求过程中的自由变量实际引用外围过程定义中所出现的约束，也就是说，应该在定义本过程的环境去寻找它们。
+<<<<<<< HEAD
+
+## 1.2 过程与它们所产生的计算
+在这一节中，将考察一些由简单过程所产生的计算过程的“形状”，还将研究这些计算过程消耗的各种重要计算资源（时间和空间）的速率
+
+### 1.2.1 线性的递归和迭代
+考虑如下两种计算阶乘的过程：  
+1  
+`(define (factorial n)`  
+　　`(if (= n 1)`  
+　　　　`1`  
+　　　　`(* n (factorial(- n 1)))))`
+
+2  
+`(define (factorial n)`  
+　　`(fact-iter 1 1 n))`
+
+`(define (fact-iter product counter max-count)`  
+　　`(if (> counter max-count)`  
+　　　　`product`  
+　　　　`(fact-iter(* counter product)`  
+　　　　　　　　　`(+ counter 1)`  
+　　　　　　　　　`(max-count)))`
+
+在第一个计算过程中，代换模型是一种先逐步展开而后收缩的形状，构造起一个**推迟进行的操作**所形成的链条，收缩阶段表现为这些运算的实际执行。这成为一个**递归计算过程**。  
+在第二个计算过程中，没有任何的增长或收缩，这种过程为**迭代计算过程**。一般来说，迭代计算过程就是那种其状态可以用固定数目的**状态变量**来描述的计算过程。  
+
+* **递归计算过程**与**递归过程**：二者为两个不同的概念，递归过程指的是一个语法形式上的事实，说明这个过程的定义中直接或间接地引用了该过程本身。而计算过程说的是其进展方式。某个递归过程（如fact-iter）将产生一个迭代的计算过程。  
+
+* 对于递归过程的解释，所需要消耗的存储量总与过程调用的数目成正比，即使它所描述的计算过程从原理上来看是迭代的。
+
+### 1.2.2 树形递归
+考虑斐波那契数列的递归实现：
+
+`(define (Fib n)`  
+　　`(cond ((= n 0) 0)`  
+　　　　　`((= n 1) 1)`  
+　　　　　`(else (+ (Fib (- n 1))`  
+　　　　　　　　　　`(Fib (- n 2))))))`
+
+* 可以证明，Fib（n）是最接近φ^n/(sqrt(5))的整数，其中φ=(1+sqrt(5))/2
+* 一般来说，树形递归计算过程中所需的**步骤数**将正比于树中的节点数，其**空间需求**正比于树的最大深度
+
+斐波那契数列的线性迭代实现：
+
+`(define (fib n)`  
+　　`(define (fib-iter a b n)`  
+　　　　`(if ((= n 0) a)`    
+　　　　　　`(fib-iter b (+ a b) (- n 1)))`  
+　　`(fib-iter 0 1 n))`
+
+###换零钱方式的统计
+
+给了50、25、10、5、1美分的硬币，给定任意数量的现金，计算出换零钱方式的总数：  
+基本想法：总数=除第一种硬币外其他所有方式+扣掉第一种硬币的币值的所有总数
+
+`(define (change-count amount)`  
+　　`(cc amount 5))`
+
+`(define (cc amount kind-of-coins)`  
+　　`(cond ((= 0 amount) 1)`  
+　　　　　`((or (< amount 0) (= kind-of-coins 0)) 0)`  
+　　　　　`(else (+ (cc amount (- kind-of-coins 1))`  
+　　　　　　　　　　`(cc (- amount (first-denomination kind-of-coins))`
+　　　　　　　　　　　　　　　　　　　　　　　`kind-of-coins)))))`
+
+`(define (first-denomination kind-of-coins)`  
+　　`(cond ((= 1 kind-of-coins) 1)`  
+　　　　　`((= 2 kind-of-coins) 5)`  
+　　　　　`((= 3 kind-of-coins) 10)`  
+　　　　　`((= 4 kind-of-coins) 25)`  
+　　　　　`((= 5 kind-of-coins) 50)))`  
+
+### 1.2.3 增长的阶
+令n是一个参数，它能作为问题规模的一个度量，令R(n)是一个计算过程在处理规模为n的问题时所需要的资源量。在每个时刻只能执行固定数目的操作的计算机里，所需的时间将正比于需要执行的基本机器的指令条数。  
+
+* 我们称R(n)具有θ(f(n))的增长阶，记为R(n)=θ(f(n))，如果存在与n无关的整数k1,k2,使得：k1f(n) \leq R(n) \leq k2f(n) 对足够大的n都成立。  
+
+对于上述换零钱的递归，空间的阶为O(n)，时间的阶为O(n^5)。（k种零钱则为O(n^k)）  
+
+证明：显然当所有换的币值为1时，树达到最深，故深度为n，空间的阶为O(n)。
+对于时间而言，考虑以下几个步骤：  
+
+* 1. (cc n 1) = O(n)（要执行左支路n/(first-denomination 1)次，为O(n)）
+* 2. (cc n 2) = (+ (cc n 1) (cc (- n t) 2)) = (+ (cc n 1) (cc (- n t) 1) ... (cc (- n (* k t)) 1)) = O(n^2) （每个加号为O(n)，共n/t个加号，t为某币值，故为O(n^2)）
+* 3. 以此类推，(cc n k) = O(n^k)
+
+### 1.2.4 求幂
+基本思路：要求b^n，只需考虑  
+
+* 1. n为偶数，b^n = (b^(n/2))^2 
+* 2. n为奇数，b^n = b*b^(n-1)
+
+递归实现：  
+
+`(define (fast-expt b n)`  
+　　`(cond ((= n 0) 1)`  
+　　　　　`((even? n) (square (fast-expt b (/ n 2))))`  
+　　　　　`(else (* b (fast-expt b (- n 1))))))`
+
+`(define (even? n)`  
+　　`(= (remainder n 2) 0))`  
+
+* remainder为求余数的固定语法 
+* 该算法增长的阶为θ(log n)
+
+迭代实现：
+
+`(define (expt b n)`  
+　　`(expt-iter b n a))`
+
+`(define (expt-iter b n a)`  
+　　`(cond ((= 0 n) a)`  
+　　　　　`((even? n) (expt-iter (square b) (/ n 2) a))`  
+　　　　　`(else (expt-iter b (- n 1) (* a b)))))`
+
+* 一般来说，定义一个**不变量**，要求它在状态之间保持不变，这一技术是思考迭代算法设计问题时的强有力的方法。（如上述程序，a*b^n即为不变量）
