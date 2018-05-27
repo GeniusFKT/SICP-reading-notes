@@ -258,3 +258,95 @@
 　　　　　`(else (expt-iter b (- n 1) (* a b)))))`
 
 * 一般来说，定义一个**不变量**，要求它在状态之间保持不变，这一技术是思考迭代算法设计问题时的强有力的方法。（如上述程序，a*b^n即为不变量）
+
+### 习题1.19
+存在着一种以对数步数求出斐波那契数的算法。前述算法的迭代过程使用了变换a+b→a和a→b，现将此称为T变换。斐波那契数可以通过将T^n应用于对偶(1,0)而产生出来。考虑变换族Tpq，满足：bq+aq+ap→a和bp+aq→b，p=0，q=1即为T变换，则将Tpq应用两次，效果等同于同样形式的一次变换Tp'q'，可计算得p'=p^2+q^2,q'=2pq+q^2，再像fast-iter那样，便只需对数的步数。
+
+`(define (fib n)`  
+　　`(fib-iter 1 0 0 1 n))`
+
+`(define (fib-iter a b p q count)`  
+　　`(cond ((= count 0) b)`  
+　　　　　`((even? count)`  
+ 　　　　　`(fib-iter a`    
+　　　　　　　　　　`b`  
+　　　　　　　　　　`(+ (square p) (square q))`  
+　　　　　　　　　　`(+ (* 2 p q) (square q)))`  
+　　　　　`(else (fib-iter (+ (* b q) (* a q) (* a p))`  
+　　　　　　　　　　　　　`(+ (* b p) (* a q))`  
+　　　　　　　　　　　　　`p`  
+　　　　　　　　　　　　　`q (- count 1)))))`
+
+
+### 1.2.5 最大公约数
+最大公约数（GCD,greatest common divisor）定义为能除尽这两个数的最大整数。
+算法思想：如果r是a除以b的余数，那么a和b的公约数正好也是b和r的公约数（欧几里得算法）
+
+`(define (gcd a b)`  
+　　`(if (= b 0)`  
+　　　　`a`  
+　　　　`(gcd b (remainder a b))))`
+  
+其步骤依所涉及的数对数增长
+
+* **Lame定理**：如果欧几里得算法需要用k步计算出一对整数的GCD，那么这对数中较小的那个数必然大于或等于第k个斐波那契数。
+* 可于此估计欧几里得算法的阶数为θ(log n)
+
+###1.2.6 实例：素数检测
+
+下面的程序能找出给定数n的最小整数因子：
+
+`(define (smallest-divisor n)`  
+　　`(find-divisor n 2))`
+
+`(define (find-divisor n test-divisor)`  
+　　`(cond ((> (square test-divisor) n) n)`  
+　　　　　`((divide? test-divisor n) test-divisor)`  
+　　　　　`(else (find-divisor n (+ test-divisor 1)))))`
+
+`(define (divide? a b)`  
+　　`(= (remainder b a) 0))`
+
+而n是素数当且仅当其是自己的最小因子：  
+
+`(define (prime? n)`  
+　　`(= (smallest-divisor n) n))`
+
+由循环迭代的次数知，步数达到θ(sqrt n)阶
+
+**费马检查**  
+
+* **费马小定理**：如果n是一个素数，a是小于n的任意正整数，那么a的n次方与a模n同余。
+* 如果n不是素数，一般而言，大部分的a<n将满足上面关系。因此随机取一个a<n，如果满足上述等式，通过越来越多的检查，便可不断加强对有关结果的信心。这一算法称为**费马检查**
+
+为了实现费马检查，要有一个过程来计算一个数的幂对另一个数取模的结果：  
+
+`(define (expmod base exp m)`  
+　　`(cond ((= exp 0) 1)`  
+　　　　　`((even? exp)`  
+　　　　　`(remainder (square (expmod base (/ exp 2) m))`  
+　　　　　　　　　　　`m)`  
+　　　　　`(else`  
+　　　　　`(remainder (* base (expmod base (- exp 1) m))`  
+　　　　　　　　　　　`m))))`
+
+
+* 如果用之前使用的`fast-expt`来进行计算，则需要处理较大的数据，造成程序运行的缓慢
+
+
+随机数a的选取通过过程`random`完成：
+
+`(define (fermat-test n)`  
+　　`(define (try-it a)`  
+　　　　`(= (expmod a n n) a))`  
+　　`(try-it (+ 1 (random (- n 1)))))`
+
+`(define (fast-prime? n times)`  
+　　`(cond ((= time 0) true)`  
+　　　　　`((fermat-test n) (fast-prime? n (- times 1)))`  
+　　　　　`(else false)))`
+
+**概率方法**  
+之前的算法都能保证计算的结果一定正确，而费马检查得到的结果只有概率上的正确性。事实上，对于任何数n，如果执行这一检查的次数足够多，而且n通过了检查，那么就能使这一素数检查出错的概率减小到所需的任意程度。（可惜依然存在一些能够骗过费马检查的整数，称为carmichael数，其非常罕见）
+
+* `runtime`基本过程：调用他将返回一个整数，表示系统已经运行的时间（例如，以微秒计）。
