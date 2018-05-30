@@ -389,5 +389,76 @@
 `(define (sum-cubes a b)`  
 　　`(sum cube a inc b))`
 
+对于`sum`也可以使用如下的迭代过程：
 
+`(define (sum term a next b)`  
+　　`(define (iter a result)`  
+　　　　　　`(if (> a b) result`  
+　　　　　　　　　　　　`(iter (next a) (+ result (term a)))`  
+　　`(iter a 0))`
 
+类似的，也可以构造连乘`product`过程：  
+
+`(define (product term a next b)`  
+　　`(if (> a b)`  
+　　　　`1`  
+　　　　`(* (term a) (product term (next a) next b))))`
+
+甚至进而将`sum`与`product`进行统一，构造`accumulate`过程  
+
+`(define (accumulate combiner null-value term a next b)`  
+　　`(if (> a b)`  
+　　　　`null-value`  
+　　　　`(combiner (term a) (accumulate combiner null-value term (next a) next b))))`
+
+###1.3.2 用`lambda`构造过程
+利用上一节的`sum`函数时，有时必须需要构造出一些简单的函数以进行`term`的替换，使其作为高阶函数的参数，而使用`lambda`直接刻画这类描述，使其能够创建出所需要的过程
+
+* 一般而言，`lambda`用与`define`同样的方式创建过程，除了不为有关过程提供名字之外
+`(lambda (<formal-parameters>) <body>)`
+* 仅有的不同之处，就是这种过程没有与环境中的任何名字相关联
+* 像任何以过程为值的表达式一样，`lambda`表达式可用作组合式的运算符
+
+**用`let`创建局部变量**  
+
+`lambda`的另一个应用是创建局部变量。在一个过程里，除了使用那些已经约束为 过程的变量外，常常还需要另外一些局部变量。因此，语言里有一个专门的特殊形式称为`let`。
+
+`let`表达式的一般形式是：  
+
+`(let ((<var1> <exp1>)`  
+　　　`(<var2> <exp2>)`  
+　　　`...`  
+　　　`(<varn> <expn>))`  
+　　`<body>)`
+
+`let`表达式的第一部分是个名字-表达式对偶的表，当`let`被求值时，这里的每个名字将被关联于对应的表达式的值。再将这些名字约束为局部变量的情况下求值`let`的体。这一做法正好使`let`表达式被解释为替代如下表达式的另一种语法形式：  
+
+`((lambda (<var1> <var2> ... <varn>)`  
+　　`<body>`  
+　`<exp1>`  
+　`<exp2>`  
+　`...`  
+　`<expn>)`
+
+* `let`使人能够在尽可能接近其使用的地方建立局部变量约束
+* 变量的值是在`let`之外计算的。在为局部变量提供值的表达式依赖于某些与局部变量同名的变量时，这一规定就起作用了
+
+###1.3.3 过程作为一般性的方法
+实例：找出函数的不动点  
+
+数x称为函数f的不动点，如果x满足方程f(x)=x。对于某些函数，通过从某个初始猜测出发，反复的应用f，直到值的变化不大时，就可以找到它的一个不动点。根据这个思路，可以设计出一个过程`fixed-point`
+
+`(define (fixed-point f first-guess)`  
+　　`(define (close-enough? a b)`  
+　　　　`(< (abs (- a b)) 0.000001))`  
+　　`(define (try guess)`  
+　　　　`(let ((next (f guess)))`  
+　　　　　　`(cond ((close-enough? guess next) next)`  
+　　　　　　　　`(else (display next)`  
+　　　　　　　　　　　`(newline)`  
+　　　　　　　　　　　`(try next)))))`  
+　　`(try first-guess))`
+
+但是这个方法有一点缺陷，对某些函数，这种不动点搜寻并不收敛。考虑计算某个数的平方根，即找到y使得y^2=x，变换为y=x/y，于是要做的就是找到x/y的不动点。利用上面的搜寻会使程序进入无限循环，在答案的两边反复震荡  
+控制这类震荡的一种方法是不让有关的猜测变化太剧烈。我们可以做一个猜测，使之不像x/y那样原理y，为此可以用二者的平均值。可以取y的下一个猜测值为(1/2)(y+x/y)而不是(x/y)。容易验证，这种猜测序列计算过程和之前一种是一样的。  
+这种取逼近一个解的一系列值的平均值的方法，是一种称为**平均阻尼**的技术，它常常用在不动点搜寻中，作为帮助收敛的手段。
