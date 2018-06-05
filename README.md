@@ -462,3 +462,87 @@
 但是这个方法有一点缺陷，对某些函数，这种不动点搜寻并不收敛。考虑计算某个数的平方根，即找到y使得y^2=x，变换为y=x/y，于是要做的就是找到x/y的不动点。利用上面的搜寻会使程序进入无限循环，在答案的两边反复震荡  
 控制这类震荡的一种方法是不让有关的猜测变化太剧烈。我们可以做一个猜测，使之不像x/y那样原理y，为此可以用二者的平均值。可以取y的下一个猜测值为(1/2)(y+x/y)而不是(x/y)。容易验证，这种猜测序列计算过程和之前一种是一样的。  
 这种取逼近一个解的一系列值的平均值的方法，是一种称为**平均阻尼**的技术，它常常用在不动点搜寻中，作为帮助收敛的手段。
+
+
+### 1.3.4 过程作为返回值
+上面的例子说明，将过程作为参数传递，能够显著增强我们的程序设计语言的表达能力，通过创建另一种其返回值本身也是过程的过程，我们还能得到进一步的表达能力。
+
+如可以将平均阻尼的思想描述为：
+
+`(define (average-damp f)`  
+　　`(lambda (x) (+ x (f x))))`
+
+**牛顿法**
+
+如果g(x)是一个可微函数，那么方程g(x)=0的一个解就是函数f(x)的一个不动点，其中f(x)=x-g(x)/Dg(x)，Dg(x)是g对x的导数。
+
+通过对上式进行迭代，则获得的x可越来越接近函数的零点。  
+牛顿法的实现如下：
+
+`(define delta-x 0.000001)`
+
+`(define (derivative f x)`  
+　　`(/ (- (f (+ x delta-x))`  
+　　　　　`(f x))`  
+　　　`delta-x))`  
+	   
+`(define (newton-method f)`  
+　　`(define (newton-iter f x n)`  
+　　　　`(if (< n 0) x`  
+　　　　　　`(newton-iter f`  
+　　　　　　　　　　　　`(- x (/ (f x) (derivative f x)))`  
+　　　　　　　　　　　　`(- n 1))))`  
+	　　`(newton-iter f 1 100))`  
+
+`(define (fixed-point f first-guess)`  
+　　`(define (close-enough? a b)`  
+　　　　`(< (abs (- a b)) 0.000001))`  
+　　　　　　`(define (try guess)`  
+　　　　　　　　`(let ((next (f guess)))`  
+　　　　　　　　　　`(cond ((close-enough? guess next) next)`  
+　　　　　　　　　　　　　`(else (display next)`  
+　　　　`(newline)`  
+　　　　`(try next)))))`  
+　　`(try first-guess))`  
+
+`(define (newton-transform g)`  
+　　`(lambda (x) (- x (/ (g x) ((derivative g) x)))))`  
+	
+`(define (newton-method g guess)`  
+　　`(fixed-point (newton-transform g) guess))`  
+	
+	
+`(define (fixed-point-of-transform g transform guess)`  
+　　`(fixed-point (transform g) guess))`  
+
+
+我们也可以通过上述方法进行sqrt x的定义。
+
+### 抽象和第一类过程
+上述实际上看到了将平方根计算作为不动点的两种形式。每种方法都从一个函数出发，找出这一函数在某种变换的不动点，我们可以将这一具有普遍性的思想表述为一个函数：
+
+`(define (fixed-point-of-transform g transform guess)`  
+　　`(fixed-point (transform g) guess))`
+
+因此可以将sqrt x写成如下两种形式：  
+
+`(define (sqrt x)`  
+　　`(fixed-point-of-transform (lambda (y) (/ x y))`  
+　　　　　　　　　　　　　　　`average-damp`  
+　　　　　　　　　　　　　　　`1.0))`
+
+`(define (sqrt x)`  
+　　`(fixed-point-of-transform (lambda (y) (- (square y) x))`  
+　　　　　　　　　　　　　　　`newton-transform`  
+　　　　　　　　　　　　　　　`1.0))`
+
+一般而言，程序设计语言总会对计算元素的可能使用方式强加上某些限制。带有最少限制的元素被称为具有**第一级**的状态。第一级元素的某些“权利或者特权”包括
+
+* 可以用变量命名
+* 可以提供给过程作为参数
+* 可以由过程作为结果返回
+* 可以包含在数据结构中
+
+Lisp不像其他程序设计语言，它给了过程完全的第一级状态。这就给有效实现提出了挑战，但由此所获得的描述能力却是惊人的。
+
+
