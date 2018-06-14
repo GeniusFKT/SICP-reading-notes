@@ -1,0 +1,12 @@
+(define (fringe tree)
+	(cond ((null? tree) (list))
+		  ((not (pair? tree)) (list tree))  ;返回一个表以作为前一组递归append的参数
+		  (else (append (fringe (car tree)) (fringe (cadr tree))))))
+		  
+		  ;只适用于二叉树
+; 改进版
+(define (fringe tree)
+	(cond ((null? tree) (list))
+		  ((not (pair? tree)) (list tree))  
+		  ((= (length tree) 2) (append (fringe (car tree)) (fringe (cadr tree))))
+		  (else (append (fringe (car tree)) (fringe (cdr tree))))))
