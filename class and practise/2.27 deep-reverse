@@ -1,0 +1,20 @@
+		  
+(define (deep-reverse tree)
+    (cond ((null? tree)         ; 空树
+            (list))
+          ((not (pair? tree))   ; 叶子
+            tree)
+          (else
+            (reverse (list (deep-reverse (car tree))            ; 递归地逆序左右子树
+                           (deep-reverse (cadr tree)))))))		; 之所以使用cadr源于list最后有一个nil空元素，否则返回一个两层嵌套的表
+
+
+;another version						   
+(define (deep-reverse tree)
+    (cond ((null? tree)      
+            (list))
+          ((not (pair? tree))   
+            tree)
+          (else
+            (list (deep-reverse (cadr tree))           
+                   (deep-reverse (car tree))))))
