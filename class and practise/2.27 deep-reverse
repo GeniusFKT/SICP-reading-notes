@@ -18,3 +18,12 @@
           (else
             (list (deep-reverse (cadr tree))           
                    (deep-reverse (car tree))))))
+
+; 以上两种代码只适用于二叉树的情况
+
+改进版本：
+(define (deep-reverse tree)
+	(cond ((null? tree) (list))
+		  ((not (pair? tree)) tree)
+		  ((= (length tree) 2) (list (deep-reverse (cadr tree)) (deep-reverse (car tree))))
+		  (else (list (deep-reverse (cdr tree)) (deep-reverse (car tree))))))
