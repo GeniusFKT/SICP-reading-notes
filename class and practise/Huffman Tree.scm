@@ -107,6 +107,12 @@
 (define (generate-huffman-tree pairs)		; pairs为符号-频度（权重）对偶表，生成一棵Huffman Tree
 	(successive-merge (make-leaf-set pairs)))
 		
+; 计算带权路径总长		  
+(define (total-weight tree)					
+	(cond ((leaf? tree) 0)
+		  (else (+ (weight-tree tree) 
+				   (total-weight (left-branch tree)) 
+				   (total-weight (right-branch tree))))))
 
 
 		
